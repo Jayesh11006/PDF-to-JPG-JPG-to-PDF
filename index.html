@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF and JPG Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        #file-input, #image-input {
+            display: block;
+            margin-bottom: 10px;
+        }
+        #upload-button, #upload-image-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #upload-button:disabled, #upload-image-button:disabled {
+            background-color: #6c757d;
+        }
+        .images-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .images-section img {
+            max-width: 200px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        #download-zip-button, #download-pdf-button {
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #download-zip-button {
+            background-color: #28a745;
+        }
+        #download-pdf-button {
+            background-color: #17a2b8;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF and JPG Converter</h1>
+    <div class="upload-section">
+        <input type="file" id="file-input" accept=".pdf" multiple>
+        <button id="upload-button" onclick="uploadFiles()" disabled>Upload PDF</button>
+    </div>
+    <div class="upload-section">
+        <input type="file" id="image-input" accept=".jpg,.jpeg,.png" multiple>
+        <button id="upload-image-button" onclick="uploadImages()" disabled>Upload Images</button>
+    </div>
+    <div class="images-section" id="images-section"></div>
+    <button id="download-zip-button" onclick="downloadZip()" style="display: none;">Download All as ZIP</button>
+    <button id="download-pdf-button" onclick="downloadPDF()" style="display: none;">Download PDF</button>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const uploadButton = document.getElementById('upload-button');
+        const imageInput = document.getElementById('image-input');
+        const uploadImageButton = document.getElementById('upload-image-button');
+        const imagesSection = document.getElementById('images-section');
+        const downloadZipButton = document.getElementById('download-zip-button');
+        const downloadPDFButton = document.getElementById('download-pdf-button');
+
+        fileInput.addEventListener('change', () => {
+            uploadButton.disabled = !fileInput.files.length;
+        });
+
+        imageInput.addEventListener('change', () => {
+            uploadImageButton.disabled = !imageInput.files.length;
+        });
+
+        async function uploadFiles() {
+            const files = fileInput.files;
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files[]', files[i]);
+            }
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                displayImages(result.images);
+                downloadZipButton.style.display = 'block';
+            } else {
+                alert(result.error);
+            }
+        }
+
+        async function uploadImages() {
+            const files = imageInput.files;
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files[]', files[i]);
+            }
+
+            const response = await fetch('/upload_images', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                downloadPDFButton.setAttribute('data-pdf-filename', result.pdf);
+                downloadPDFButton.style.display = 'block';
+            } else {
+                alert(result.error);
+            }
+        }
+
+        function displayImages(images) {
+            imagesSection.innerHTML = '';
+            images.forEach(image => {
+                const imgElement = document.createElement('img');
+                imgElement.src = `/images/${image}`;
+                imagesSection.appendChild(imgElement);
+            });
+        }
+
+        function downloadZip() {
+            window.location.href = '/download_zip';
+        }
+
+        function downloadPDF() {
+            const pdfFilename = downloadPDFButton.getAttribute('data-pdf-filename');
+            window.location.href = `/pdfs/${pdfFilename}`;
+        }
+    </script>
+</body>
+</html>
